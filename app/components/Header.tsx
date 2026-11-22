@@ -1,28 +1,29 @@
 import { Heading, Flex, Text, Code, Skeleton } from "@radix-ui/themes";
-import { Signal } from "@preact/signals-react";
 
 interface HeaderProps {
-  ipLoading: boolean;
-  ipError: Error | null;
-  ipSignal: Signal<string>;
+  ip: string;
+  loading: boolean;
+  error: Error | null;
 }
 
-export const Header = ({ ipLoading, ipError, ipSignal }: HeaderProps) => {
+export const Header = ({ ip, loading, error }: HeaderProps) => {
   return (
     <>
-      <Heading size="8">真实地址生成器 🌍</Heading>
-      <Flex gap="2" align="center">
+      <Heading size={{ initial: "7", md: "8" }} align="center">
+        真实地址生成器 🌍
+      </Heading>
+      <Flex gap="2" align="center" wrap="wrap" justify="center">
         <Text size="4" color="gray">
           您的当前 IP 地址为：
         </Text>
-        {ipLoading ? (
+        {loading ? (
           <Skeleton>
             <Code size="4">loading...</Code>
           </Skeleton>
-        ) : ipError ? (
-          <Text color="red">获取IP失败</Text>
+        ) : error ? (
+          <Text color="red">获取 IP 失败，可手动输入 IP</Text>
         ) : (
-          <Code size="4">{ipSignal.value}</Code>
+          <Code size="4">{ip}</Code>
         )}
       </Flex>
     </>

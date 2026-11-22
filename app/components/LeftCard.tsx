@@ -2,7 +2,6 @@ import {
   Card,
   Text,
   Flex,
-  Box,
   TextField,
   Button,
   SegmentedControl,
@@ -11,18 +10,20 @@ import {
 import { ReloadIcon } from "@radix-ui/react-icons";
 import { AddressSelector } from "./AddressSelector";
 import { HistoryList } from "./HistoryList";
-import { HistoryRecord } from "../types";
-import { ipSignal } from "@/signals/ipSignal";
+import type { HistoryRecord, InputMode, Region } from "../types";
 
 interface LeftCardProps {
+  mode: InputMode;
+  onModeChange: (mode: InputMode) => void;
   inputIp: string;
-  inputMode: string;
+  onInputIpChange: (value: string) => void;
+  region: Region | null;
+  onRegionChange: (region: Region) => void;
+  currentIP: string;
   isLoading: boolean;
+  onGenerate: () => void;
   history: HistoryRecord[];
-  selectedHistory: string | null;
-  setInputIp: (value: string) => void;
-  setInputMode: (value: string) => void;
-  handleGenerateAddress: () => Promise<void>;
+  selectedId: string;
   onHistoryClick: (record: HistoryRecord) => void;
   onDeleteRecord: (id: string) => void;
   onDeleteAll: () => void;
@@ -30,72 +31,67 @@ interface LeftCardProps {
 }
 
 export const LeftCard = ({
+  mode,
+  onModeChange,
   inputIp,
-  inputMode,
+  onInputIpChange,
+  region,
+  onRegionChange,
+  currentIP,
   isLoading,
+  onGenerate,
   history,
-  selectedHistory,
-  setInputIp,
-  setInputMode,
-  handleGenerateAddress,
+  selectedId,
   onHistoryClick,
   onDeleteRecord,
   onDeleteAll,
   onToggleStarred,
 }: LeftCardProps) => {
   return (
-    <Card size="4" style={{ flex: 2 }} className="hidden md:flex">
-      <Flex direction="column" gap="3" style={{ flex: 1 }}>
-        <Box>
-          <Flex gap="3">
-            <SegmentedControl.Root
-              defaultValue="ip"
-              onValueChange={(value) => {
-                setInputMode(value);
-                setInputIp("");
-              }}
-              size="2"
-            >
-              <SegmentedControl.Item value="ip">IP</SegmentedControl.Item>
-              <SegmentedControl.Item value="address">
-                地址
-              </SegmentedControl.Item>
-            </SegmentedControl.Root>
-            {inputMode === "address" ? (
-              <Flex style={{ flex: 1 }}>
-                <AddressSelector onSelect={setInputIp}>
-                  <TextField.Root
-                    size="2"
-                    placeholder="请选择地址"
-                    value={inputIp}
-                    onChange={(e) => setInputIp(e.target.value)}
-                    style={{ flex: 1 }}
-                  />
-                </AddressSelector>
-              </Flex>
-            ) : (
+    <Card size={{ initial: "2", md: "4" }} style={{ flex: 2, display: "flex" }}>
+      <Flex direction="column" gap="3" style={{ flex: 1, width: "100%" }}>
+        <Flex gap="3" direction={{ initial: "column", sm: "row" }}>
+          <SegmentedControl.Root
+            value={mode}
+            onValueChange={(value) => onModeChange(value as InputMode)}
+            size="2"
+          >
+            <SegmentedControl.Item value="ip">IP</SegmentedControl.Item>
+            <SegmentedControl.Item value="region">地址</SegmentedControl.Item>
+          </SegmentedControl.Root>
+
+          {mode === "region" ? (
+            <AddressSelector value={region} onSelect={onRegionChange}>
               <TextField.Root
                 size="2"
-                placeholder={ipSignal.value}
-                value={inputIp}
-                onChange={(e) => setInputIp(e.target.value)}
-                style={{ flex: 1 }}
+                readOnly
+                placeholder="点击选择地区"
+                value={region ? `${region.city}, ${region.state}, ${region.country}` : ""}
+                style={{ flex: 1, cursor: "pointer" }}
               />
-            )}
-            <Button
+            </AddressSelector>
+          ) : (
+            <TextField.Root
               size="2"
-              onClick={handleGenerateAddress}
-              disabled={isLoading}
-            >
-              <Text>{isLoading ? "生成中..." : "生成地址"}</Text>
-              <ReloadIcon className={isLoading ? "animate-spin" : ""} />
-            </Button>
-          </Flex>
-        </Box>
+              placeholder={currentIP || "输入 IPv4 / IPv6"}
+              value={inputIp}
+              onChange={(e) => onInputIpChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !isLoading) onGenerate();
+              }}
+              style={{ flex: 1 }}
+            />
+          )}
+
+          <Button size="2" onClick={onGenerate} disabled={isLoading}>
+            <Text>{isLoading ? "生成中..." : "生成地址"}</Text>
+            <ReloadIcon className={isLoading ? "animate-spin" : ""} />
+          </Button>
+        </Flex>
         <Separator size="4" />
         <HistoryList
           history={history}
-          selectedHistory={selectedHistory}
+          selectedId={selectedId}
           onHistoryClick={onHistoryClick}
           onDeleteRecord={onDeleteRecord}
           onDeleteAll={onDeleteAll}

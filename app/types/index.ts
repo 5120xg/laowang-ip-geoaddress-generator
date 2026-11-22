@@ -6,7 +6,7 @@ export interface User {
   phone: string;
   id: {
     name: string;
-    value: string;
+    value: string | null;
   };
 }
 
@@ -21,22 +21,42 @@ export interface Address {
   state?: string;
   postcode?: string;
   country?: string;
+  countryCode?: string;
   coordinates?: Coordinates;
+}
+
+/** 地址模式下用户选择的地区 */
+export interface Region {
+  country: string;
+  state: string;
+  city: string;
+  countryCode?: string;
+}
+
+export interface IPInfo {
+  ip: string;
+  coordinates: Coordinates;
+  countryCode?: string;
+}
+
+export type InputMode = "ip" | "region";
+
+export interface GeneratedIdentity {
+  user: User;
+  address: Address;
+  source: InputMode;
+  /** 仅 IP 模式下有值：用于生成地址的 IP */
+  ip?: string;
 }
 
 export interface HistoryRecord {
   id: string;
   user: User;
   address: Address;
-  ip: string;
+  source?: InputMode;
+  ip?: string;
   timestamp: number;
   isStarred?: boolean;
-}
-
-interface ISourceResource {
-  id: string;
-  data: string;
-  downloadUrl: string;
 }
 
 export interface MailEvent {
@@ -70,7 +90,6 @@ export interface TempMailMessage {
   createdAt: string;
   html: string[];
   text: string;
-  source?: ISourceResource;
   cc: string[];
   bcc: string[];
   flagged: boolean;

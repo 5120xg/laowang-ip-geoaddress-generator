@@ -1,28 +1,17 @@
-# 构建阶段
+# ---------- 构建阶段 ----------
 FROM node:20-alpine AS builder
 WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
 
 COPY package*.json ./
-RUN npm install
-COPY . .
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
-# 启用 standalone 输出（使用 ES 模块语法）
-RUN echo 'export default {output: "standalone"};' > next.config.js
+COPY . .
 RUN npm run build
 
-# 生产阶段
-FROM node:20-alpine
-WORKDIR /app
+# ---------- 运行阶段：纯静态文件，非 root 的 Nginx ----------
+FROM nginxinc/nginx-unprivileged:1.27-alpine
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/out /usr/share/nginx/html
 
-# 只复制 standalone 构建产物
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
-
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-
-EXPOSE 3000/tcp
-CMD ["node", "server.js"]
+EXPOSE 3000

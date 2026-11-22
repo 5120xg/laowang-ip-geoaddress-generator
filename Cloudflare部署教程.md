@@ -1,31 +1,21 @@
 # Cloudflare Pages 部署教程
 
+本项目已改为**纯静态导出**，不再需要 Node.js 运行时，也不需要 `nodejs_compat` 兼容性标志。
+
 ## 1. Fork 项目仓库
 
-1. 访问 [GuooGaiiip-geoaddress-generator](https://github.com/GuooGaii/ip-geoaddress-generator)
+1. 访问 [GuooGaii/ip-geoaddress-generator](https://github.com/GuooGaii/ip-geoaddress-generator)
 2. 点击右上角的 "Fork" 按钮创建你自己的副本
 
 ## 2. 在 Cloudflare 中部署
 
-### 2.1 前置准备
-1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com)
-2. 在左侧菜单找到并点击 "Pages"
-3. 点击 "连接到 Git" 按钮
-4. 按提示关联你的 GitHub 账号
+1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com)，进入 "Workers 和 Pages" → "Pages"
+2. 点击 "连接到 Git"，关联 GitHub 账号并选择 fork 的仓库
+3. 构建配置：
+   - 框架预设：`Next.js (Static HTML Export)`（或选 "无"）
+   - 构建命令：`npm run build`
+   - 构建输出目录：`out`
+   - 环境变量（可选）：`NODE_VERSION` = `20`
+4. 点击 "保存并部署"，完成后访问分配的域名即可
 
-### 2.2 创建项目
-1. 选择你刚才 fork 的仓库
-2. 点击 "开始设置"
-3. 在项目配置页面:
-   - 框架预设: 选择 `Next.js`（**注意：不要选择 Next.js Static HTML Export**）
-
-> 提示：首次部署可能会出现错误提示,这是正常现象。按照步骤 2.3 启用 Node.js 兼容性并重新部署即可解决。
-
-### 2.3 启用 Node.js 兼容性
-1. 部署完成后,进入项目设置
-2. 在“运行时”类目下找到“兼容性标志”，填入 `nodejs_compat`。
-
-### 2.4 完成部署
-1. 回到 "部署" 页面
-2. 点击 "重新部署" 按钮
-3. 等待部署完成,访问分配的域名即可使用
+> 如果是从旧版本升级：请把项目设置里的构建输出目录改为 `out`，并可以删除 `nodejs_compat` 标志。

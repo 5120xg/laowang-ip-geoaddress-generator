@@ -7,6 +7,8 @@ import { CopyWrapper } from "./CopyWrapper";
 interface InfoItemProps {
   label: string;
   value?: string;
+  /** 没有值时显示的灰色提示；不传则整行隐藏 */
+  placeholder?: string;
   loading?: boolean;
   extraIcon?: ReactNode;
   textSize?: "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
@@ -15,41 +17,35 @@ interface InfoItemProps {
 export const InfoItem = ({
   label,
   value,
+  placeholder,
   loading,
   extraIcon,
   textSize = "2",
 }: InfoItemProps) => {
-  const labelContent = (
-    <DataList.Label minWidth="60px" style={{ marginLeft: "8px" }}>
-      <Flex align="center" gap="2">
-        <Text size={textSize}>{label}</Text>
-        {extraIcon}
-      </Flex>
-    </DataList.Label>
-  );
-
-  if (loading) {
-    return (
-      <DataList.Item>
-        {labelContent}
-        <DataList.Value>
-          <Skeleton>
-            <Text>Loading...</Text>
-          </Skeleton>
-        </DataList.Value>
-      </DataList.Item>
-    );
-  }
-
-  if (!value) return null;
+  if (!loading && !value && !placeholder) return null;
 
   return (
     <DataList.Item>
-      {labelContent}
+      <DataList.Label minWidth="60px" style={{ marginLeft: "8px" }}>
+        <Flex align="center" gap="2">
+          <Text size={textSize}>{label}</Text>
+          {extraIcon}
+        </Flex>
+      </DataList.Label>
       <DataList.Value>
-        <CopyWrapper value={value}>
-          <Text highContrast>{value}</Text>
-        </CopyWrapper>
+        {loading ? (
+          <Skeleton>
+            <Text>Loading...</Text>
+          </Skeleton>
+        ) : value ? (
+          <CopyWrapper value={value}>
+            <Text highContrast style={{ wordBreak: "break-word", textAlign: "left" }}>
+              {value}
+            </Text>
+          </CopyWrapper>
+        ) : (
+          <Text color="gray">{placeholder}</Text>
+        )}
       </DataList.Value>
     </DataList.Item>
   );

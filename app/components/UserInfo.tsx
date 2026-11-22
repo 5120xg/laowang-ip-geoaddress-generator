@@ -1,69 +1,41 @@
 "use client";
 
 import { DataList } from "@radix-ui/themes";
-import { User } from "../types";
+import type { User } from "../types";
 import { InfoItem } from "./InfoItem";
-import { Signal } from "@preact/signals-react";
 
 interface UserInfoProps {
-  userSignal: Signal<User | null>;
+  user: User | null;
   loading: boolean;
   email: string;
-}
-
-interface UserField {
-  id: string;
-  label: string;
-  getValue: (user: User, email: string) => string;
+  emailLoading: boolean;
+  emailError: string;
 }
 
 export function UserInfo({
-  userSignal,
+  user,
   loading,
   email,
+  emailLoading,
+  emailError,
 }: Readonly<UserInfoProps>) {
-  const userFields: UserField[] = [
-    {
-      id: "last",
-      label: "姓",
-      getValue: (user) => user.name.last,
-    },
-    {
-      id: "first",
-      label: "名",
-      getValue: (user) => user.name.first,
-    },
-    {
-      id: "phone",
-      label: "电话",
-      getValue: (user) => user.phone,
-    },
-    {
-      id: "ssn",
-      label: "SSN",
-      getValue: (user) => user.id.value || "暂无",
-    },
-    {
-      id: "email",
-      label: "邮箱",
-      getValue: (_, email) => email,
-    },
-  ];
-
   return (
     <DataList.Root>
-      {userFields.map((field) => (
-        <InfoItem
-          key={field.id}
-          label={field.label}
-          value={
-            userSignal.value
-              ? field.getValue(userSignal.value, email)
-              : undefined
-          }
-          loading={loading}
-        />
-      ))}
+      <InfoItem label="名" value={user?.name.first} loading={loading} />
+      <InfoItem label="姓" value={user?.name.last} loading={loading} />
+      <InfoItem label="电话" value={user?.phone} loading={loading} />
+      {/* 证件号：美国为 SSN，其他国家为各自证件类型；没有则不显示 */}
+      <InfoItem
+        label={user?.id?.name || "SSN"}
+        value={user?.id?.value ?? undefined}
+        loading={loading}
+      />
+      <InfoItem
+        label="邮箱"
+        value={email || undefined}
+        placeholder={emailError ? "临时邮箱不可用" : undefined}
+        loading={emailLoading}
+      />
     </DataList.Root>
   );
 }

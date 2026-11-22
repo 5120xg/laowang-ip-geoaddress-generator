@@ -28,12 +28,13 @@ https://ip-geoaddress-generator.pages.dev/
   - 省/州
   - 城市
   - SSN（仅美国地区）
+  - 临时邮箱（可直接收信）
 
 ### 地址管理
 - 在Google地图上显示生成的地址
 - 一键复制各项信息
 - 保存、搜索和删除地址
-- 导出保存的地址为TXT文件
+- 导出保存的地址为JSON文件
 
 ### 用户体验
 - 响应式设计，适配多种设备
@@ -47,7 +48,11 @@ Docker部署
 
 ```bash
 docker run -p 3000:3000 guoogaii/ip-geoaddress-generator:latest
+# 或本地构建
+docker compose up -d --build
 ```
+
+本项目为纯静态站点，`npm run build` 后把 `out/` 目录放到任意静态托管（Nginx、Cloudflare Pages、GitHub Pages 等）即可。
 
 ## 本地开发
 
@@ -64,7 +69,13 @@ docker run -p 3000:3000 guoogaii/ip-geoaddress-generator:latest
 
 3. 运行开发服务器：
    ```bash
-   npm dev
+   npm run dev
+   ```
+   打开 http://localhost:5000
+
+4. 构建静态文件（输出到 `out/` 目录）：
+   ```bash
+   npm run build
    ```
 
 ## 注意事项

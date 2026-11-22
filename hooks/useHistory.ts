@@ -1,135 +1,116 @@
-import { useState, useEffect } from "react";
-import type { HistoryRecord, User, Address } from "@/app/types";
+import { useCallback, useEffect, useState } from "react";
+import type { GeneratedIdentity, HistoryRecord } from "@/app/types";
 
-const generateId = () =>
-  `history-${Date.now()}-${Math.random().toString(36).substring(2)}`;
+const STORAGE_KEY = "addressHistory";
+/** 未收藏记录最多保留条数（收藏的记录不受限制） */
+const MAX_UNSTARRED = 20;
 
-interface UseHistoryReturn {
-  history: HistoryRecord[];
-  selectedHistory: string;
-  setSelectedHistory: (id: string) => void;
-  addHistoryRecord: (params: {
-    user: User;
-    address: Address;
-    ip: string;
-  }) => void;
-  deleteHistoryRecord: (id: string) => void;
-  deleteAllHistory: () => void;
-  toggleStarred: (id: string) => void;
+const newId = () =>
+  `history-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+/** 收藏置顶，其余按时间倒序 */
+function sortHistory(list: HistoryRecord[]): HistoryRecord[] {
+  return [...list].sort(
+    (a, b) =>
+      Number(!!b.isStarred) - Number(!!a.isStarred) || b.timestamp - a.timestamp
+  );
 }
 
-export default function useHistory(): UseHistoryReturn {
-  const [history, setHistory] = useState<HistoryRecord[]>([]);
-  const [selectedHistory, setSelectedHistory] = useState<string>("");
+function normalize(list: HistoryRecord[]): HistoryRecord[] {
+  const sorted = sortHistory(list);
+  const starred = sorted.filter((r) => r.isStarred);
+  const others = sorted.filter((r) => !r.isStarred).slice(0, MAX_UNSTARRED);
+  return [...starred, ...others];
+}
 
-  // 从 localStorage 加载历史记录
+function isHistoryRecord(value: unknown): value is HistoryRecord {
+  const r = value as HistoryRecord;
+  return (
+    !!r &&
+    typeof r === "object" &&
+    typeof r.timestamp === "number" &&
+    !!r.user?.name &&
+    !!r.address
+  );
+}
+
+function readStorage(): HistoryRecord[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    const seen = new Set<string>();
+    return normalize(
+      parsed.filter(isHistoryRecord).map((record) => {
+        let id = typeof record.id === "string" && record.id ? record.id : newId();
+        if (seen.has(id)) id = newId();
+        seen.add(id);
+        return { ...record, id };
+      })
+    );
+  } catch (e) {
+    console.error("读取历史记录失败:", e);
+    return [];
+  }
+}
+
+export default function useHistory() {
+  const [history, setHistory] = useState<HistoryRecord[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [selectedId, setSelectedId] = useState("");
+
+  // 只在客户端读取；加载完成前不写入，避免空数组覆盖已有记录
   useEffect(() => {
-    const savedHistory = localStorage.getItem("addressHistory");
-    if (savedHistory) {
-      try {
-        const parsedHistory = JSON.parse(savedHistory);
-        // 确保所有记录都有有效的 id
-        const validHistory = parsedHistory.map((record: HistoryRecord) => ({
-          ...record,
-          id:
-            record.id && record.id.startsWith("history-")
-              ? record.id
-              : generateId(),
-        }));
-        // 对历史记录进行排序，收藏的记录置顶
-        const sortedHistory = validHistory.sort(
-          (a: HistoryRecord, b: HistoryRecord) => {
-            if (a.isStarred === b.isStarred) {
-              return b.timestamp - a.timestamp;
-            }
-            return (b.isStarred ? 1 : 0) - (a.isStarred ? 1 : 0);
-          }
-        );
-        setHistory(sortedHistory);
-      } catch (e) {
-        console.error("Failed to parse history:", e);
-        setHistory([]);
-      }
-    }
+    setHistory(readStorage());
+    setLoaded(true);
   }, []);
 
-  // 保存历史记录到 localStorage
   useEffect(() => {
-    localStorage.setItem("addressHistory", JSON.stringify(history));
-  }, [history]);
+    if (!loaded) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    } catch (e) {
+      console.error("保存历史记录失败:", e);
+    }
+  }, [history, loaded]);
 
-  const addHistoryRecord = ({
-    user,
-    address,
-    ip,
-  }: {
-    user: User;
-    address: Address;
-    ip: string;
-  }) => {
-    const timestamp = Date.now();
-    const newRecord: HistoryRecord = {
-      id: `history-${timestamp}-${Math.random().toString(36).substring(2)}`,
-      user,
-      address,
-      ip,
-      timestamp,
+  const addRecord = useCallback((identity: GeneratedIdentity) => {
+    const record: HistoryRecord = {
+      ...identity,
+      id: newId(),
+      timestamp: Date.now(),
       isStarred: false,
     };
+    setHistory((prev) => normalize([record, ...prev]));
+    setSelectedId(record.id);
+  }, []);
 
-    setHistory((prev) => {
-      const isDuplicate = prev.some((record) => record.id === newRecord.id);
-      if (isDuplicate) {
-        newRecord.id = `history-${timestamp}-${Math.random()
-          .toString(36)
-          .substring(2)}`;
-      }
-      // 对历史记录进行排序，收藏的记录置顶
-      const newHistory = [newRecord, ...prev.slice(0, 19)];
-      return newHistory.sort((a: HistoryRecord, b: HistoryRecord) => {
-        if (a.isStarred === b.isStarred) {
-          return b.timestamp - a.timestamp;
-        }
-        return (b.isStarred ? 1 : 0) - (a.isStarred ? 1 : 0);
-      });
-    });
-    setSelectedHistory(newRecord.id);
-  };
+  const toggleStarred = useCallback((id: string) => {
+    setHistory((prev) =>
+      normalize(
+        prev.map((r) => (r.id === id ? { ...r, isStarred: !r.isStarred } : r))
+      )
+    );
+  }, []);
 
-  const toggleStarred = (id: string) => {
-    setHistory((prev) => {
-      const newHistory = prev.map((record) =>
-        record.id === id ? { ...record, isStarred: !record.isStarred } : record
-      );
-      // 对历史记录进行排序，收藏的记录置顶
-      return newHistory.sort((a: HistoryRecord, b: HistoryRecord) => {
-        if (a.isStarred === b.isStarred) {
-          return b.timestamp - a.timestamp;
-        }
-        return (b.isStarred ? 1 : 0) - (a.isStarred ? 1 : 0);
-      });
-    });
-  };
+  const deleteRecord = useCallback((id: string) => {
+    setHistory((prev) => prev.filter((r) => r.id !== id));
+    setSelectedId((current) => (current === id ? "" : current));
+  }, []);
 
-  const deleteHistoryRecord = (id: string) => {
-    setHistory((prev) => prev.filter((record) => record.id !== id));
-    if (selectedHistory === id) {
-      setSelectedHistory("");
-    }
-  };
-
-  const deleteAllHistory = () => {
+  const deleteAll = useCallback(() => {
     setHistory([]);
-    setSelectedHistory("");
-  };
+    setSelectedId("");
+  }, []);
 
   return {
     history,
-    selectedHistory,
-    setSelectedHistory,
-    addHistoryRecord,
-    deleteHistoryRecord,
-    deleteAllHistory,
+    selectedId,
+    setSelectedId,
+    addRecord,
     toggleStarred,
+    deleteRecord,
+    deleteAll,
   };
 }

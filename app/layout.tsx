@@ -3,7 +3,7 @@ import { GeistSans } from "geist/font/sans";
 import "./globals.css";
 import { Metadata } from "next";
 import QueryProvider from "./QueryProvider";
-import ThemeWarpper from "./ThemeWarpper";
+import ThemeWrapper from "./ThemeWrapper";
 
 export const metadata: Metadata = {
   title: "真实地址生成器",
@@ -30,10 +30,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh">
+    <html lang="zh-CN" suppressHydrationWarning>
       <body className={GeistSans.className}>
         <QueryProvider>
-          <ThemeWarpper>{children}</ThemeWarpper>
+          <ThemeWrapper>{children}</ThemeWrapper>
         </QueryProvider>
       </body>
     </html>

@@ -29,7 +29,7 @@ https://ip-geoaddress-generator.pages.dev/
 - Display generated addresses on Google Maps
 - One-click copy of all information
 - Save, search, and delete addresses
-- Export saved addresses to TXT file
+- Export saved addresses to JSON file
 
 ### User Experience
 - Responsive design for various devices
@@ -60,7 +60,13 @@ docker run -p 3000:3000 guoogaii/ip-geoaddress-generator:latest
 
 3. Run development server:
    ```bash
-   npm dev
+   npm run dev
+   ```
+   Open http://localhost:5000
+
+4. Build static files (output to `out/`):
+   ```bash
+   npm run build
    ```
 
 ## Important Notes
